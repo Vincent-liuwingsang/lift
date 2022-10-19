@@ -37,6 +37,7 @@ const WEBHOOK_DEFINITION = {
     insecure: { type: "boolean" },
     path: { type: "string" },
     eventType: { type: "string" },
+    detail: { type: "string" },
   },
   required: ["path"],
   additionalProperties: false,
