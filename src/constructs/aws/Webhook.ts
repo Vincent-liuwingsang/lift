@@ -49,6 +49,7 @@ const WEBHOOK_DEFAULTS = {
 
 type Configuration = FromSchema<typeof WEBHOOK_DEFINITION>;
 
+const domains = {} as Record<string, DomainName | undefined>;
 export class Webhook extends AwsConstruct {
     public static type = "webhook";
     public static schema = WEBHOOK_DEFINITION;
@@ -70,18 +71,24 @@ export class Webhook extends AwsConstruct {
         this.api = new HttpApi(this, "HttpApi");
 
         if (configuration.apiMapping) {
-            this.apiMapping = new ApiMapping(this, "ApiMapping", {
-                api: this.api,
-                domainName: new DomainName(this, "DomainName", {
+            domains[configuration.apiMapping.domainName] =
+                domains[configuration.apiMapping.domainName] ??
+                new DomainName(this, "DomainName", {
                     domainName: configuration.apiMapping.domainName,
                     certificate: Certificate.fromCertificateArn(
                         this,
                         "Certificate",
                         configuration.apiMapping.certificateArn
                     ),
-                }),
-                apiMappingKey: configuration.apiMapping.apiMappingKey,
-            });
+                });
+            const domain = domains[configuration.apiMapping.domainName];
+            if (domain) {
+                this.apiMapping = new ApiMapping(this, "ApiMapping", {
+                    api: this.api,
+                    domainName: domain,
+                    apiMappingKey: configuration.apiMapping.apiMappingKey,
+                });
+            }
         }
 
         this.apiEndpointOutput = new CfnOutput(this, "HttpApiEndpoint", {
