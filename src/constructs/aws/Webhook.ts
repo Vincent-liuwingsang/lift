@@ -179,6 +179,7 @@ export class Webhook extends AwsConstruct {
   variables(): Record<string, unknown> {
     return {
       busName: this.bus.eventBusName,
+      apiId: this.api.apiId,
     };
   }
 
