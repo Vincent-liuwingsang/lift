@@ -1,4 +1,4 @@
-import { ApiMapping, DomainName, HttpApi } from "@aws-cdk/aws-apigatewayv2-alpha";
+import { ApiMapping, DomainName, EndpointType, HttpApi } from "@aws-cdk/aws-apigatewayv2-alpha";
 import { AwsConstruct } from "@lift/constructs/abstracts";
 import type { AwsProvider } from "@lift/providers";
 import type { CfnResource } from "aws-cdk-lib";
@@ -80,6 +80,7 @@ export class Webhook extends AwsConstruct {
                         "Certificate",
                         configuration.apiMapping.certificateArn
                     ),
+                    endpointType: EndpointType.EDGE,
                 });
             const domain = domains[configuration.apiMapping.domainName];
             if (domain) {
