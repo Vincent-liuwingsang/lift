@@ -1,9 +1,10 @@
-import { HttpApi } from "@aws-cdk/aws-apigatewayv2-alpha";
+import { ApiMapping, DomainName, HttpApi } from "@aws-cdk/aws-apigatewayv2-alpha";
 import { AwsConstruct } from "@lift/constructs/abstracts";
 import type { AwsProvider } from "@lift/providers";
 import type { CfnResource } from "aws-cdk-lib";
 import { CfnOutput, Fn } from "aws-cdk-lib";
 import { CfnAuthorizer, CfnIntegration, CfnRoute } from "aws-cdk-lib/aws-apigatewayv2";
+import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import type { CfnEventBus } from "aws-cdk-lib/aws-events";
 import { EventBus } from "aws-cdk-lib/aws-events";
 import { PolicyDocument, PolicyStatement, Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
@@ -29,6 +30,15 @@ const WEBHOOK_DEFINITION = {
         path: { type: "string" },
         eventType: { type: "string" },
         detail: { type: "string" },
+        apiMapping: {
+            type: "object",
+            properties: {
+                domainName: { type: "string" },
+                certificateArn: { type: "string" },
+                apiMappingKey: { type: "string" },
+            },
+            required: ["domainName", "certificateArn", "apiMappingKey"],
+        },
     },
     required: ["path"],
     additionalProperties: false,
@@ -45,6 +55,7 @@ export class Webhook extends AwsConstruct {
 
     private readonly api: HttpApi;
     private readonly bus: EventBus;
+    private readonly apiMapping: ApiMapping | undefined;
     private readonly apiEndpointOutput: CfnOutput;
     private readonly endpointPathOutput: CfnOutput;
 
@@ -57,6 +68,22 @@ export class Webhook extends AwsConstruct {
         super(scope, id);
 
         this.api = new HttpApi(this, "HttpApi");
+
+        if (configuration.apiMapping) {
+            this.apiMapping = new ApiMapping(this, "ApiMapping", {
+                api: this.api,
+                domainName: new DomainName(this, "DomainName", {
+                    domainName: configuration.apiMapping.domainName,
+                    certificate: Certificate.fromCertificateArn(
+                        this,
+                        "Certificate",
+                        configuration.apiMapping.certificateArn
+                    ),
+                }),
+                apiMappingKey: configuration.apiMapping.apiMappingKey,
+            });
+        }
+
         this.apiEndpointOutput = new CfnOutput(this, "HttpApiEndpoint", {
             value: this.api.apiEndpoint,
         });
